@@ -1,6 +1,6 @@
 use super::eval::*;
 
-fn expecte_ok(input: &str, output: f64) {
+fn expect_ok(input: &str, output: f64) {
     let equation = input.to_string();
     let evaluation = eval(equation);
     assert!(matches!(evaluation, Ok(_)));
@@ -10,22 +10,22 @@ fn expecte_ok(input: &str, output: f64) {
 
 #[test]
 fn simple_sum() {
-    expecte_ok("10 + 10", 20.0);
+    expect_ok("10 + 10", 20.0);
 }
 
 #[test]
 fn unary_operator() {
-    expecte_ok("-10", -10.0);
+    expect_ok("-10", -10.0);
 }
 
 #[test]
 fn predence_order() {
-    expecte_ok("5 * 10 ^ 2 + 2", 502.0);
+    expect_ok("5 * 10 ^ 2 + 2", 502.0);
 }
 
 #[test]
 fn parentheses() {
-    expecte_ok("(10 + 10) * 2", 40.0);
+    expect_ok("(10 + 10) * 2", 40.0);
 }
 
 #[test]
