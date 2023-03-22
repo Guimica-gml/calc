@@ -4,6 +4,9 @@ use std::process;
 
 mod eval;
 
+#[cfg(test)]
+mod tests;
+
 fn main() -> io::Result<()> {
     let args = env::args().skip(1);
     let equation = args.collect::<String>();
