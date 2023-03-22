@@ -68,9 +68,7 @@ impl Lexer {
             column: 1,
         }
     }
-}
 
-impl Lexer {
     fn chop_char(&mut self) -> char {
         self.column += 1;
         self.content.remove(0)
