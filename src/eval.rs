@@ -284,10 +284,6 @@ fn parse_expr_impl(lexer: &mut Peekable<Lexer>, lh_expr: Option<Expr>, expect_pa
             match lexer.peek() {
                 Some(t) if symbol_to_op.contains_key(&t.kind) => {
                     let next_op = symbol_to_op[&t.kind];
-
-                    println!("op '{}': {}", op, op.prec());
-                    println!("next_op '{}': {}", next_op, next_op.prec());
-
                     if op.prec() >= next_op.prec() {
                         lh_expr = Expr::BinaryOp { op, left: Box::from(lh_expr), right: Box::from(rh_expr) };
                     } else {
@@ -316,7 +312,5 @@ pub fn parse_expr(lexer: &mut Peekable<Lexer>) -> Result<Expr, ParseError> {
 }
 
 pub fn eval(equation: String) -> Result<f64, ParseError> {
-    let expr  = parse_expr(&mut Lexer::new(equation).peekable())?;
-    println!("{}", expr);
-    Ok(expr.eval())
+    Ok(parse_expr(&mut Lexer::new(equation).peekable())?.eval())
 }
