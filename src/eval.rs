@@ -50,19 +50,19 @@ enum TokenKind {
 }
 
 #[derive(Debug, Clone)]
-struct Token {
+pub struct Token {
     column: u32,
     text: String,
     kind: TokenKind,
 }
 
-struct Lexer {
+pub struct Lexer {
     content: String,
     column: u32,
 }
 
 impl Lexer {
-    fn new(equation: String) -> Self {
+    pub fn new(equation: String) -> Self {
         Lexer {
             content: equation,
             column: 1,
@@ -129,7 +129,7 @@ impl Iterator for Lexer {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum BinaryOpKind {
+pub enum BinaryOpKind {
     Add,
     Sub,
     Mul,
@@ -162,7 +162,7 @@ impl Display for BinaryOpKind {
 }
 
 #[derive(Debug, Clone)]
-enum UnaryOpKind {
+pub enum UnaryOpKind {
     Pos,
     Neg,
 }
@@ -177,7 +177,7 @@ impl Display for UnaryOpKind {
 }
 
 #[derive(Debug, Clone)]
-enum Expr {
+pub enum Expr {
     BinaryOp {
         op: BinaryOpKind,
         left: Box<Expr>,
@@ -192,7 +192,7 @@ enum Expr {
 }
 
 impl Expr {
-    fn eval(&self) -> f64 {
+    pub fn eval(&self) -> f64 {
         match self {
             Expr::BinaryOp { op, left, right } => match op {
                 BinaryOpKind::Add => left.eval() + right.eval(),
@@ -222,6 +222,7 @@ impl Display for Expr {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum ParseError {
     UnexpectedEnd,
     UnexpectedToken(u32, String),
@@ -257,7 +258,7 @@ fn parse_primary(lexer: &mut Peekable<Lexer>) -> Result<Expr, ParseError> {
                 _ => Ok(Expr::ParenBlock(Box::from(expr)))
             }
         }
-        _ => return Err(ParseError::UnexpectedToken(token.column, token.text)),
+        _ => Err(ParseError::UnexpectedToken(token.column, token.text)),
     }
 }
 
@@ -284,8 +285,7 @@ fn parse_expr_impl(lexer: &mut Peekable<Lexer>, lh_expr: Option<Expr>, expect_pa
                 Some(t) if symbol_to_op.contains_key(&t.kind) => {
                     let next_op = symbol_to_op[&t.kind];
                     if op.prec() >= next_op.prec() {
-                        let lh_expr2 = Expr::BinaryOp { op, left: Box::from(lh_expr), right: Box::from(rh_expr) };
-                        lh_expr = parse_expr_impl(lexer, Some(lh_expr2), expect_paren_close)?;
+                        lh_expr = Expr::BinaryOp { op, left: Box::from(lh_expr), right: Box::from(rh_expr) };
                     } else {
                         let rh_expr2 = parse_expr_impl(lexer, Some(rh_expr), expect_paren_close)?;
                         lh_expr = Expr::BinaryOp { op, left: Box::from(lh_expr), right: Box::from(rh_expr2) };
@@ -295,17 +295,18 @@ fn parse_expr_impl(lexer: &mut Peekable<Lexer>, lh_expr: Option<Expr>, expect_pa
                     lh_expr = Expr::BinaryOp { op, left: Box::from(lh_expr), right: Box::from(rh_expr) };
                 }
             }
-        } else if t.kind == Symbol(ParenClose) && !expect_paren_close {
-            return Err(ParseError::UnexpectedToken(t.column, t.text.clone()));
         } else {
-            break;
+            if t.kind == Symbol(ParenClose) && expect_paren_close {
+                break;
+            }
+            return Err(ParseError::UnexpectedToken(t.column, t.text.clone()));
         }
     }
 
     Ok(lh_expr)
 }
 
-fn parse_expr(lexer: &mut Peekable<Lexer>) -> Result<Expr, ParseError> {
+pub fn parse_expr(lexer: &mut Peekable<Lexer>) -> Result<Expr, ParseError> {
     parse_expr_impl(lexer, None, false)
 }
 
