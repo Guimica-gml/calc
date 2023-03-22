@@ -252,7 +252,7 @@ fn parse_primary(lexer: &mut Peekable<Lexer>) -> Result<Expr, ParseError> {
         Symbol(Dash) => Ok(Expr::UnaryOp { op: UnaryOpKind::Neg, right: Box::from(parse_primary(lexer)?) }),
         Number => Ok(Expr::Number(token.text.parse().unwrap())),
         Symbol(ParenOpen) => {
-            let expr = parse_expr(lexer, None)?;
+            let expr = parse_expr_impl(lexer, None, true)?;
             match lexer.next() {
                 Some(t) if t.kind != Symbol(ParenClose) => Err(ParseError::UnexpectedEnd),
                 None => Err(ParseError::UnexpectedEnd),
@@ -263,7 +263,7 @@ fn parse_primary(lexer: &mut Peekable<Lexer>) -> Result<Expr, ParseError> {
     }
 }
 
-fn parse_expr(lexer: &mut Peekable<Lexer>, lh_expr: Option<Expr>) -> Result<Expr, ParseError> {
+fn parse_expr_impl(lexer: &mut Peekable<Lexer>, lh_expr: Option<Expr>, expect_paren_close: bool) -> Result<Expr, ParseError> {
     use TokenKind::*;
     use self::Symbol::*;
 
@@ -287,9 +287,9 @@ fn parse_expr(lexer: &mut Peekable<Lexer>, lh_expr: Option<Expr>) -> Result<Expr
                     let next_op = symbol_to_op[&t.kind];
                     if op.prec() >= next_op.prec() {
                         let lh_expr2 = Expr::BinaryOp { op, left: Box::from(lh_expr), right: Box::from(rh_expr) };
-                        lh_expr = parse_expr(lexer, Some(lh_expr2))?;
+                        lh_expr = parse_expr_impl(lexer, Some(lh_expr2), expect_paren_close)?;
                     } else {
-                        let rh_expr2 = parse_expr(lexer, Some(rh_expr))?;
+                        let rh_expr2 = parse_expr_impl(lexer, Some(rh_expr), expect_paren_close)?;
                         lh_expr = Expr::BinaryOp { op, left: Box::from(lh_expr), right: Box::from(rh_expr2) };
                     }
                 }
@@ -297,6 +297,8 @@ fn parse_expr(lexer: &mut Peekable<Lexer>, lh_expr: Option<Expr>) -> Result<Expr
                     lh_expr = Expr::BinaryOp { op, left: Box::from(lh_expr), right: Box::from(rh_expr) };
                 }
             }
+        } else if t.kind == Symbol(ParenClose) && !expect_paren_close {
+            return Err(ParseError::UnexpectedToken(t.column, t.text.clone()));
         } else {
             break;
         }
@@ -305,6 +307,10 @@ fn parse_expr(lexer: &mut Peekable<Lexer>, lh_expr: Option<Expr>) -> Result<Expr
     Ok(lh_expr)
 }
 
+fn parse_expr(lexer: &mut Peekable<Lexer>) -> Result<Expr, ParseError> {
+    parse_expr_impl(lexer, None, false)
+}
+
 pub fn eval(equation: String) -> Result<f64, ParseError> {
-    Ok(parse_expr(&mut Lexer::new(equation).peekable(), None)?.eval())
+    Ok(parse_expr(&mut Lexer::new(equation).peekable())?.eval())
 }
